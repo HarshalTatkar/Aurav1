@@ -8,6 +8,8 @@ import '../services/risk_engine.dart';
 import '../services/alert_service.dart';
 import '../services/demo_engine.dart';
 import '../services/sync_service.dart';
+import '../services/environment_service.dart';
+import 'package:geolocator/geolocator.dart';
 import '../core/api_client.dart';
 
 // ─── Auth Provider ───────────────────────────────────────────────────────────
@@ -349,3 +351,67 @@ final healthProcessorProvider = Provider<void>((ref) {
     }
   }
 });
+
+// ─── Environment Provider ───────────────────────────────────────────────────
+final environmentServiceProvider = Provider<EnvironmentService>((ref) {
+  return EnvironmentService();
+});
+
+class EnvironmentDataNotifier extends StateNotifier<EnvironmentData> {
+  final EnvironmentService _service;
+  Timer? _timer;
+  StreamSubscription<Position>? _positionSub;
+
+  EnvironmentDataNotifier(this._service) : super(EnvironmentData(
+        temperature: 28.0,
+        humidity: 50.0,
+        pm25: 18.0,
+        pm10: 35.0,
+        fetchedAt: DateTime.now(),
+        locationName: 'Fetching Location...',
+        isReal: false,
+      )) {
+    _fetchData();
+    _listenToLocationChanges();
+    // Also refresh every 2 minutes for weather updates even without movement
+    _timer = Timer.periodic(const Duration(minutes: 2), (_) {
+      _fetchData();
+    });
+  }
+
+  void _listenToLocationChanges() {
+    try {
+      _positionSub = Geolocator.getPositionStream(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high, // MUST be high for Emulator GPS
+          distanceFilter: 500, // Only trigger on 500m+ movement
+        ),
+      ).listen((_) {
+        // Location changed — refetch everything
+        _fetchData();
+      });
+    } catch (_) {
+      // Position stream not available (e.g. web), rely on timer
+    }
+  }
+
+  Future<void> _fetchData() async {
+    final data = await _service.fetchEnvironmentData();
+    if (mounted) {
+      state = data;
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _positionSub?.cancel();
+    super.dispose();
+  }
+}
+
+final environmentDataProvider = StateNotifierProvider<EnvironmentDataNotifier, EnvironmentData>((ref) {
+  final service = ref.watch(environmentServiceProvider);
+  return EnvironmentDataNotifier(service);
+});
+

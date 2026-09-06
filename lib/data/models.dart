@@ -533,3 +533,34 @@ class SensorHistoryPoint {
 
   const SensorHistoryPoint(this.timestamp, this.value);
 }
+
+// ─── Environment Data ─────────────────────────────────────────────────────────
+class EnvironmentData {
+  final double temperature;
+  final double humidity;
+  final double pm25;
+  final double pm10;
+  final DateTime fetchedAt;
+  final String? locationName;
+  final bool isReal; // true = from API, false = fallback
+
+  const EnvironmentData({
+    required this.temperature,
+    required this.humidity,
+    required this.pm25,
+    required this.pm10,
+    required this.fetchedAt,
+    this.locationName,
+    this.isReal = false,
+  });
+
+  factory EnvironmentData.demo() => EnvironmentData(
+        temperature: 28.0,
+        humidity: 50.0,
+        pm25: 18.0,
+        pm10: 35.0,
+        fetchedAt: DateTime.now(),
+        locationName: 'Demo Location',
+        isReal: false,
+      );
+}

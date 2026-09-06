@@ -11,12 +11,19 @@ class EnvironmentScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final reading = ref.watch(sensorDataProvider);
-    
+    final envData = ref.watch(environmentDataProvider);
+
     final textColor = AuraColors.textPrimary;
     final subtextColor = AuraColors.textSecondary;
 
-    final heatIndex = reading.ambientTemperature > 0
-        ? calculateHeatIndex(reading.ambientTemperature, reading.humidity)
+    // Use real API values when available, else fall back to sensor reading
+    final temp = envData.isReal ? envData.temperature : reading.ambientTemperature;
+    final humidity = envData.isReal ? envData.humidity : reading.humidity;
+    final pm25 = envData.isReal ? envData.pm25 : reading.pm25;
+    final pm10 = envData.isReal ? envData.pm10 : reading.pm10;
+
+    final heatIndex = temp > 0
+        ? calculateHeatIndex(temp, humidity)
         : 0.0;
 
     return Scaffold(
@@ -29,8 +36,24 @@ class EnvironmentScreen extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text('Environment', style: TextStyle(color: textColor, fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: -0.5)),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Environment', style: TextStyle(color: textColor, fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: -0.5)),
+                        if (envData.locationName != null) ...[
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Icon(Icons.location_on_rounded, color: subtextColor, size: 14),
+                              const SizedBox(width: 4),
+                              Text(envData.locationName!, style: TextStyle(color: subtextColor, fontSize: 14, fontWeight: FontWeight.w500)),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
                     LiveIndicator(lastUpdated: reading.timestamp),
                   ],
                 ),
@@ -42,7 +65,7 @@ class EnvironmentScreen extends ConsumerWidget {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
                 child: AuraCard(
-                  gradient: reading.ambientTemperature > 35
+                  gradient: temp > 35
                       ? LinearGradient(
                           colors: [
                             AuraColors.warning.withValues(alpha: 0.15),
@@ -57,15 +80,15 @@ class EnvironmentScreen extends ConsumerWidget {
                     children: [
                       Icon(
                         Icons.thermostat_rounded,
-                        color: reading.ambientTemperature > 35
+                        color: temp > 35
                             ? AuraColors.warning
                             : AuraColors.moderate,
                         size: 36,
                       ),
                       const SizedBox(height: 12),
                       AnimatedValue(
-                        value: reading.ambientTemperature > 0
-                            ? '${reading.ambientTemperature.round()}°C'
+                        value: temp > 0
+                            ? '${temp.round()}°C'
                             : '--',
                         style: TextStyle(
                           color: textColor,
@@ -76,15 +99,15 @@ class EnvironmentScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        reading.ambientTemperature > 38
+                        temp > 38
                             ? 'Extreme Heat'
-                            : reading.ambientTemperature > 35
+                            : temp > 35
                                 ? 'High Heat'
-                                : reading.ambientTemperature > 30
+                                : temp > 30
                                     ? 'Warm'
                                     : 'Comfortable',
                         style: TextStyle(
-                          color: reading.ambientTemperature > 35
+                          color: temp > 35
                               ? AuraColors.warning
                               : AuraColors.healthy,
                           fontSize: 14,
@@ -112,9 +135,9 @@ class EnvironmentScreen extends ConsumerWidget {
                     icon: Icons.water_drop_rounded,
                     iconColor: AuraColors.techBlue,
                     label: 'Humidity',
-                    value: reading.humidity > 0 ? '${reading.humidity.round()}' : '--',
+                    value: humidity > 0 ? '${humidity.round()}' : '--',
                     unit: '%',
-                    subtitle: reading.humidity > 70 ? 'High humidity' : 'Normal',
+                    subtitle: humidity > 70 ? 'High humidity' : 'Normal',
                   ),
                   VitalTile(
                     icon: Icons.whatshot_rounded,
@@ -126,19 +149,19 @@ class EnvironmentScreen extends ConsumerWidget {
                   ),
                   VitalTile(
                     icon: Icons.blur_on_rounded,
-                    iconColor: aqiColor(reading.pm25),
+                    iconColor: aqiColor(pm25),
                     label: 'PM2.5',
-                    value: reading.pm25 > 0 ? '${reading.pm25.round()}' : '--',
+                    value: pm25 > 0 ? '${pm25.round()}' : '--',
                     unit: 'µg/m³',
-                    subtitle: aqiLabel(reading.pm25),
+                    subtitle: aqiLabel(pm25),
                   ),
                   VitalTile(
                     icon: Icons.grain_rounded,
-                    iconColor: aqiColor(reading.pm10 * 0.7),
+                    iconColor: aqiColor(pm10 * 0.7),
                     label: 'PM10',
-                    value: reading.pm10 > 0 ? '${reading.pm10.round()}' : '--',
+                    value: pm10 > 0 ? '${pm10.round()}' : '--',
                     unit: 'µg/m³',
-                    subtitle: reading.pm10 > 100 ? 'Elevated' : 'Normal',
+                    subtitle: pm10 > 100 ? 'Elevated' : 'Normal',
                   ),
                 ]),
               ),
@@ -157,17 +180,17 @@ class EnvironmentScreen extends ConsumerWidget {
                           Container(
                             padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
-                              color: aqiColor(reading.pm25).withValues(alpha: 0.12),
+                              color: aqiColor(pm25).withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: Icon(Icons.cloud_rounded, color: aqiColor(reading.pm25), size: 18),
+                            child: Icon(Icons.cloud_rounded, color: aqiColor(pm25), size: 18),
                           ),
                           const SizedBox(width: 10),
                           Text('Air Quality', style: TextStyle(color: textColor, fontSize: 15, fontWeight: FontWeight.w600)),
                           const Spacer(),
                           StatusBadge(
-                            label: aqiLabel(reading.pm25).toUpperCase(),
-                            color: aqiColor(reading.pm25),
+                            label: aqiLabel(pm25).toUpperCase(),
+                            color: aqiColor(pm25),
                           ),
                         ],
                       ),
@@ -178,7 +201,7 @@ class EnvironmentScreen extends ConsumerWidget {
                         child: SizedBox(
                           height: 8,
                           child: TweenAnimationBuilder<double>(
-                            tween: Tween(begin: 0, end: (reading.pm25 / 300).clamp(0, 1)),
+                            tween: Tween(begin: 0, end: (pm25 / 300).clamp(0, 1)),
                             duration: const Duration(milliseconds: 800),
                             builder: (context, value, child) => Stack(
                               children: [
@@ -234,7 +257,7 @@ class EnvironmentScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        _getAdvisory(reading.ambientTemperature, reading.humidity, reading.pm25),
+                        _getAdvisory(temp, humidity, pm25),
                         style: TextStyle(color: subtextColor, fontSize: 13, height: 1.5),
                       ),
                     ],

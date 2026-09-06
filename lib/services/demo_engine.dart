@@ -13,6 +13,9 @@ class DemoEngine {
   DemoScenario _currentScenario = DemoScenario.normal;
   DemoScenario _targetScenario = DemoScenario.normal;
 
+  // Real environment override
+  EnvironmentData? _realEnvData;
+
   // Current simulated values (smooth transitions)
   double _hr = 72;
   double _spo2 = 98;
@@ -65,6 +68,13 @@ class DemoEngine {
     }
   }
 
+  /// Override the simulated environment data with real data
+  void setRealEnvironmentData(EnvironmentData data) {
+    if (data.isReal) {
+      _realEnvData = data;
+    }
+  }
+
   // ─── Target values per scenario ────────────────────────────────────────
 
   _ScenarioTargets _targets(DemoScenario scenario) {
@@ -112,11 +122,21 @@ class DemoEngine {
     _hr = _lerp(_hr, target.hr, smoothing) + _noise(1.5);
     _spo2 = (_lerp(_spo2, target.spo2, smoothing) + _noise(0.3)).clamp(70, 100);
     _bodyTemp = _lerp(_bodyTemp, target.bodyTemp, smoothing) + _noise(0.05);
-    _ambientTemp = _lerp(_ambientTemp, target.ambientTemp, smoothing) + _noise(0.3);
-    _humidity = (_lerp(_humidity, target.humidity, smoothing) + _noise(0.5)).clamp(0, 100);
-    _pm25 = (_lerp(_pm25, target.pm25, smoothing) + _noise(2.0)).clamp(0, 500);
-    _pm10 = (_lerp(_pm10, target.pm10, smoothing) + _noise(3.0)).clamp(0, 500);
     _activity = (_lerp(_activity, target.activity, smoothing) + _noise(0.02)).clamp(0, 1);
+
+    if (_realEnvData != null) {
+      // Use real environment data directly (no scenario targets)
+      _ambientTemp = _lerp(_ambientTemp, _realEnvData!.temperature, smoothing) + _noise(0.1);
+      _humidity = (_lerp(_humidity, _realEnvData!.humidity, smoothing) + _noise(0.1)).clamp(0, 100);
+      _pm25 = (_lerp(_pm25, _realEnvData!.pm25, smoothing) + _noise(0.5)).clamp(0, 500);
+      _pm10 = (_lerp(_pm10, _realEnvData!.pm10, smoothing) + _noise(0.5)).clamp(0, 500);
+    } else {
+      // Simulated environment data
+      _ambientTemp = _lerp(_ambientTemp, target.ambientTemp, smoothing) + _noise(0.3);
+      _humidity = (_lerp(_humidity, target.humidity, smoothing) + _noise(0.5)).clamp(0, 100);
+      _pm25 = (_lerp(_pm25, target.pm25, smoothing) + _noise(2.0)).clamp(0, 500);
+      _pm10 = (_lerp(_pm10, target.pm10, smoothing) + _noise(3.0)).clamp(0, 500);
+    }
 
     // Battery slowly drains
     if (_random.nextInt(20) == 0 && _battery > 5) _battery--;

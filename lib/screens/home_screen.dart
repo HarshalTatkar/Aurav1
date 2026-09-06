@@ -43,6 +43,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final profile = ref.watch(profileProvider);
     final devices = ref.watch(deviceStateProvider);
     final settings = ref.watch(settingsProvider);
+    final envData = ref.watch(environmentDataProvider);
+
+    // Feed real env data into demo engine
+    if (envData.isReal) {
+      ref.read(demoEngineProvider).setRealEnvironmentData(envData);
+    }
 
     // Trigger health processor
     ref.watch(healthProcessorProvider);
@@ -74,8 +80,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             letterSpacing: -0.5,
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        LiveIndicator(lastUpdated: reading.timestamp),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            LiveIndicator(lastUpdated: reading.timestamp),
+                            if (envData.locationName != null) ...[
+                              const SizedBox(width: 12),
+                              Icon(Icons.location_on_rounded, color: subtextColor, size: 14),
+                              const SizedBox(width: 4),
+                              Text(envData.locationName!, style: TextStyle(color: subtextColor, fontSize: 13, fontWeight: FontWeight.w500)),
+                            ],
+                          ],
+                        ),
                       ],
                     ),
                     Row(
@@ -237,33 +253,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     children: [
                       _EnvItem(
                         icon: Icons.thermostat_outlined,
-                        value: reading.ambientTemperature > 0
-                            ? '${reading.ambientTemperature.round()}°C'
-                            : '--',
+                        value: envData.temperature > 0
+                            ? '${envData.temperature.round()}°C'
+                            : (reading.ambientTemperature > 0 ? '${reading.ambientTemperature.round()}°C' : '--'),
                         label: 'Ambient',
-                        color: reading.ambientTemperature > 35
+                        color: (envData.isReal ? envData.temperature : reading.ambientTemperature) > 35
                             ? AuraColors.warning
                             : AuraColors.healthy,
                       ),
                       _envDivider(),
                       _EnvItem(
                         icon: Icons.water_drop_outlined,
-                        value: reading.humidity > 0
-                            ? '${reading.humidity.round()}%'
-                            : '--',
+                        value: envData.humidity > 0
+                            ? '${envData.humidity.round()}%'
+                            : (reading.humidity > 0 ? '${reading.humidity.round()}%' : '--'),
                         label: 'Humidity',
-                        color: reading.humidity > 70
+                        color: (envData.isReal ? envData.humidity : reading.humidity) > 70
                             ? AuraColors.warning
                             : AuraColors.healthy,
                       ),
                       _envDivider(),
                       _EnvItem(
                         icon: Icons.cloud_outlined,
-                        value: reading.pm25 > 0
-                            ? aqiLabel(reading.pm25).split(' ').first
-                            : '--',
+                        value: envData.pm25 > 0
+                            ? aqiLabel(envData.pm25).split(' ').first
+                            : (reading.pm25 > 0 ? aqiLabel(reading.pm25).split(' ').first : '--'),
                         label: 'Air',
-                        color: aqiColor(reading.pm25),
+                        color: aqiColor(envData.isReal ? envData.pm25 : reading.pm25),
                       ),
                     ],
                   ),
