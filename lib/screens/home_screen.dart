@@ -6,8 +6,9 @@ import '../core/theme.dart';
 import '../core/constants.dart';
 import '../core/utils.dart';
 import '../providers/providers.dart';
+import '../providers/bluetooth_provider.dart'; // Add this import for bluetoothListenerProvider
 import '../widgets/shared_widgets.dart';
-import '../screens/bluetooth_connect_screen.dart';  // Add this import
+import '../screens/bluetooth_connect_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -28,12 +29,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Future<void> _initializeDemo() async {
     final settings = ref.read(settingsProvider);
+    
+    // Always start the sensor data listener (handles WebSocket in non-demo mode, and demo engine in demo mode)
+    ref.read(sensorDataProvider.notifier).startListening();
+    
+    // Initialize the BLE listener so it can process ESP32 data globally
+    ref.read(bluetoothListenerProvider);
+    
     if (settings.demoMode) {
-      // Connect devices
+      // Auto-connect virtual devices for demo
       await ref.read(deviceStateProvider.notifier).connectSensor();
       await ref.read(deviceStateProvider.notifier).connectWearable();
-      // Start sensor listening
-      ref.read(sensorDataProvider.notifier).startListening();
     }
   }
 

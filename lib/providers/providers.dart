@@ -11,6 +11,7 @@ import '../services/sync_service.dart';
 import '../services/environment_service.dart';
 import 'package:geolocator/geolocator.dart';
 import '../core/api_client.dart';
+import 'bluetooth_provider.dart';
 
 // ─── Auth Provider ───────────────────────────────────────────────────────────
 class AuthNotifier extends StateNotifier<bool> {
@@ -160,6 +161,12 @@ class SensorDataNotifier extends StateNotifier<SensorReading> {
         );
       });
     }
+  }
+
+  /// Update from BLE data (called by bluetooth_provider)
+  void updateFromBle(SensorReading reading) {
+    state = reading;
+    _addToHistory(reading);
   }
 
   void stopListening() {
@@ -346,8 +353,13 @@ final healthProcessorProvider = Provider<void>((ref) {
   if (settings.wearableAlerts) {
     final cmd = alertService.getWearableCommand(risk, reading);
     if (cmd != null && cmd != WearableCommand.normal) {
-      final bleManager = ref.read(bleManagerProvider);
-      bleManager.sendWearableCommand(cmd);
+      if (settings.demoMode) {
+        final bleManager = ref.read(bleManagerProvider);
+        bleManager.sendWearableCommand(cmd);
+      } else {
+        final esp32 = ref.read(bluetoothServiceProvider);
+        esp32.sendCommand(cmd.code);
+      }
     }
   }
 });
@@ -361,6 +373,7 @@ class EnvironmentDataNotifier extends StateNotifier<EnvironmentData> {
   final EnvironmentService _service;
   Timer? _timer;
   StreamSubscription<Position>? _positionSub;
+  bool _hasBleData = false;
 
   EnvironmentDataNotifier(this._service) : super(EnvironmentData(
         temperature: 28.0,
@@ -383,11 +396,10 @@ class EnvironmentDataNotifier extends StateNotifier<EnvironmentData> {
     try {
       _positionSub = Geolocator.getPositionStream(
         locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high, // MUST be high for Emulator GPS
-          distanceFilter: 500, // Only trigger on 500m+ movement
+          accuracy: LocationAccuracy.high,
+          distanceFilter: 500,
         ),
       ).listen((_) {
-        // Location changed — refetch everything
         _fetchData();
       });
     } catch (_) {
@@ -398,7 +410,37 @@ class EnvironmentDataNotifier extends StateNotifier<EnvironmentData> {
   Future<void> _fetchData() async {
     final data = await _service.fetchEnvironmentData();
     if (mounted) {
-      state = data;
+      // If we have BLE data for temp/humidity, keep those values
+      // but take pm25, pm10, and location from the API
+      if (_hasBleData) {
+        state = state.copyWith(
+          pm25: data.pm25,
+          pm10: data.pm10,
+          locationName: data.locationName,
+          fetchedAt: data.fetchedAt,
+        );
+      } else {
+        state = data;
+      }
+    }
+  }
+
+  /// Update temperature and humidity from BLE (ESP32)
+  void updateFromBluetooth({double? temperature, double? humidity}) {
+    _hasBleData = true;
+    state = state.copyWith(
+      temperature: temperature ?? state.temperature,
+      humidity: humidity ?? state.humidity,
+      isReal: true,
+    );
+  }
+
+  /// Called when the ESP32 stops sending temp/humidity data
+  void clearBleData() {
+    if (_hasBleData) {
+      _hasBleData = false;
+      // Re-fetch to restore API environment values
+      _fetchData();
     }
   }
 
