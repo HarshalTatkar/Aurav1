@@ -12,6 +12,9 @@ class ApiClient {
   
   static const String _tokenKey = 'jwt_token';
 
+  // ✅ Add this constant for your deployed backend
+  static const String productionBaseUrl = 'https://aura-backend-5j69.onrender.com';
+
   ApiClient._internal() {
     dio = Dio(BaseOptions(
       baseUrl: _getBaseUrl(),
@@ -42,11 +45,21 @@ class ApiClient {
   }
 
   String _getBaseUrl() {
+    // ✅ FOR PRODUCTION APK - Use deployed backend
+    // For release builds, use the production URL
+    if (kReleaseMode) {
+      return productionBaseUrl;
+    }
+
+    // For development/debug builds
     if (kIsWeb) {
       return 'http://localhost:8000';
     }
     try {
       if (Platform.isAndroid) {
+        // For emulator, use 10.0.2.2
+        // For physical device on same WiFi, use your local IP
+        // return 'http://192.168.1.100:8000'; // Uncomment for local testing
         return 'http://10.0.2.2:8000';
       }
     } catch (_) {}
@@ -55,7 +68,13 @@ class ApiClient {
 
   String get wsBaseUrl {
     final httpUrl = _getBaseUrl();
-    return httpUrl.replaceFirst('http', 'ws');
+    // Replace http:// with ws:// and https:// with wss://
+    if (httpUrl.startsWith('https://')) {
+      return httpUrl.replaceFirst('https://', 'wss://');
+    } else if (httpUrl.startsWith('http://')) {
+      return httpUrl.replaceFirst('http://', 'ws://');
+    }
+    return httpUrl;
   }
 
   Future<void> saveToken(String token) async {

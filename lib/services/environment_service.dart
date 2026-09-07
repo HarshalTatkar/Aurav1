@@ -82,34 +82,9 @@ class EnvironmentService {
       final weatherData = results[0].data['current'];
       final airData = results[1].data['current'];
 
-      // 5. Reverse geocode for city name
+      // 5. Set location name to coordinates
       String locationName =
           '${lat.toStringAsFixed(2)}°, ${lon.toStringAsFixed(2)}°';
-      try {
-        // Use BigDataCloud free reverse geocoding (no API key, no rate limit)
-        final geoResponse = await _dio.get(
-          'https://api.bigdatacloud.net/data/reverse-geocode-client',
-          queryParameters: {
-            'latitude': lat,
-            'longitude': lon,
-            'localityLanguage': 'en',
-          },
-        ).timeout(const Duration(seconds: 5));
-
-        final data = geoResponse.data;
-        final city = data['city'] ?? data['principalSubdivision'] ?? '';
-        final locality = data['locality'] ?? '';
-
-        if (locality.isNotEmpty && city.isNotEmpty && locality != city) {
-          locationName = '$locality, $city';
-        } else if (city.isNotEmpty) {
-          locationName = city;
-        } else if (locality.isNotEmpty) {
-          locationName = locality;
-        }
-      } catch (_) {
-        // Keep coordinate fallback
-      }
 
       return EnvironmentData(
         temperature: (weatherData['temperature_2m'] as num).toDouble(),

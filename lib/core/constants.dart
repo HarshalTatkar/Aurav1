@@ -16,7 +16,7 @@ class BleUuids {
 // ─── API Constants ───────────────────────────────────────────────────────────
 class ApiConstants {
   ApiConstants._();
-  static const String baseUrl = 'http://localhost:8000';
+  static const String baseUrl = 'https://aura-backend-5j69.onrender.com';
   static const String wsUrl = 'ws://localhost:8000/ws';
 
   static const String authRegister = '/auth/register';

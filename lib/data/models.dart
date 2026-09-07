@@ -540,27 +540,38 @@ class EnvironmentData {
   final double humidity;
   final double pm25;
   final double pm10;
-  final DateTime fetchedAt;
+  final bool isReal;
   final String? locationName;
-  final bool isReal; // true = from API, false = fallback
+  final DateTime? fetchedAt; // ✅ ADD THIS FIELD
 
-  const EnvironmentData({
-    required this.temperature,
-    required this.humidity,
-    required this.pm25,
-    required this.pm10,
-    required this.fetchedAt,
-    this.locationName,
+  EnvironmentData({
+    this.temperature = 0,
+    this.humidity = 0,
+    this.pm25 = 0,
+    this.pm10 = 0,
     this.isReal = false,
+    this.locationName,
+    this.fetchedAt, // ✅ ADD THIS
   });
 
-  factory EnvironmentData.demo() => EnvironmentData(
-        temperature: 28.0,
-        humidity: 50.0,
-        pm25: 18.0,
-        pm10: 35.0,
-        fetchedAt: DateTime.now(),
-        locationName: 'Demo Location',
-        isReal: false,
-      );
+  EnvironmentData copyWith({
+    double? temperature,
+    double? humidity,
+    double? pm25,
+    double? pm10,
+    bool? isReal,
+    String? locationName,
+    DateTime? fetchedAt, // ✅ ADD THIS
+  }) {
+    return EnvironmentData(
+      temperature: temperature ?? this.temperature,
+      humidity: humidity ?? this.humidity,
+      pm25: pm25 ?? this.pm25,
+      pm10: pm10 ?? this.pm10,
+      isReal: isReal ?? this.isReal,
+      locationName: locationName ?? this.locationName,
+      fetchedAt: fetchedAt ?? this.fetchedAt,
+    );
+  }
+
 }

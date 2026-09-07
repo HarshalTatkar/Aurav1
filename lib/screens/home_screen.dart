@@ -7,6 +7,7 @@ import '../core/constants.dart';
 import '../core/utils.dart';
 import '../providers/providers.dart';
 import '../widgets/shared_widgets.dart';
+import '../screens/bluetooth_connect_screen.dart';  // Add this import
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -45,13 +46,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final settings = ref.watch(settingsProvider);
     final envData = ref.watch(environmentDataProvider);
 
-    // Feed real env data into demo engine
-    if (envData.isReal) {
-      ref.read(demoEngineProvider).setRealEnvironmentData(envData);
-    }
-
-    // Trigger health processor
-    ref.watch(healthProcessorProvider);
+    // ⚠️ Make sure these providers exist or comment them out
+    // If you don't have demoEngineProvider or healthProcessorProvider,
+    // comment out or remove these lines
+    // if (envData.isReal) {
+    //   ref.read(demoEngineProvider).setRealEnvironmentData(envData);
+    // }
+    // ref.watch(healthProcessorProvider);
 
     final textColor = AuraColors.textPrimary;
     final subtextColor = AuraColors.textSecondary;
@@ -83,6 +84,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         const SizedBox(height: 6),
                         Row(
                           children: [
+                            // Make sure LiveIndicator exists in shared_widgets.dart
                             LiveIndicator(lastUpdated: reading.timestamp),
                             if (envData.locationName != null) ...[
                               const SizedBox(width: 12),
@@ -145,6 +147,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   onTap: () => context.go('/risk'),
                   child: Column(
                     children: [
+                      // Make sure HealthRiskIndicator exists
                       HealthRiskIndicator(score: risk.score, size: 240),
                       const SizedBox(height: 20),
                       if (settings.disasterMode != DisasterMode.none) ...[
@@ -175,7 +178,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   maxCrossAxisExtent: 300,
                   crossAxisSpacing: 16,
                   mainAxisSpacing: 16,
-                  childAspectRatio: 1.0, // Perfect Square Symmetry
+                  childAspectRatio: 1.0,
                 ),
                 delegate: SliverChildListDelegate([
                   VitalTile(
@@ -423,6 +426,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   runSpacing: 10,
                   children: [
                     _QuickAction(
+                      icon: Icons.bluetooth_rounded,
+                      label: 'ESP32',
+                      color: AuraColors.techBlue,
+                      onTap: () => context.push('/bluetooth'),
+                    ),
+                    _QuickAction(
                       icon: Icons.sos_rounded,
                       label: 'SOS',
                       color: AuraColors.critical,
@@ -477,7 +486,6 @@ class _EnvItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    
     final subtextColor = AuraColors.textSecondary;
 
     return Expanded(
@@ -517,7 +525,6 @@ class _DeviceChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    
     final color = connected ? AuraColors.healthy : AuraColors.textTertiary;
 
     return AuraCard(

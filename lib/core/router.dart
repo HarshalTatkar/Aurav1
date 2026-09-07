@@ -11,6 +11,7 @@ import '../screens/profile_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/auth_screen.dart';
 import '../screens/onboarding_screen.dart';
+import '../screens/bluetooth_connect_screen.dart'; // 👈 ADD THIS IMPORT
 import 'theme.dart';
 
 // ─── Shell with Bottom Navigation ────────────────────────────────────────────
@@ -65,14 +66,19 @@ class _ShellScaffold extends StatelessWidget {
       switch (i) {
         case 0:
           context.go('/');
+          break;
         case 1:
           context.go('/health');
+          break;
         case 2:
           context.go('/environment');
+          break;
         case 3:
           context.go('/risk');
+          break;
         case 4:
           context.go('/alerts');
+          break;
       }
     }
 
@@ -232,6 +238,11 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/settings',
       builder: (context, state) => const SettingsScreen(),
+    ),
+    // 👇 ADD THIS NEW ROUTE (after settings or before the closing bracket)
+    GoRoute(
+      path: '/bluetooth',
+      builder: (context, state) => const BluetoothConnectScreen(),
     ),
   ],
 );
