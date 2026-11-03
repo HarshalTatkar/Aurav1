@@ -15,3 +15,19 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+## Development Setup
+
+Follow these steps to run the project locally.
+
+### Prerequisites
+- Flutter SDK
+- Dart SDK
+- Android Studio or Visual Studio Code
+- Git
+
+### Installation
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/HarshalTatkar/Aurav1.git
